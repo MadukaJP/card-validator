@@ -34,6 +34,10 @@ app.use(express.json());
 
 app.use("/api", generalLimiter);
 
+app.get("/", (_req: Request, res: Response) => {
+  res.json(customContent("success", { message: "Card Validation API" }));
+});
+
 app.get("/api/health", (_req: Request, res: Response) => {
   res.json(customContent("success", { message: "Card validator API is running" }));
 });
