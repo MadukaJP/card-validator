@@ -1,59 +1,30 @@
-import cors from "cors";
-import express from "express";
-import rateLimit from "express-rate-limit";
+import express, { Application, Request, Response } from "express";
 import helmet from "helmet";
+import cors from "cors";
+import { generalLimiter } from "./middleware/rate-limit.middleware";
+import { notFoundHandler, errorHandler } from "./middleware/error.middleware";
+import { customContent } from "./utils/custom-response";
+import cardRoutes from "./routes/card.routes";
 
-import cardRouter from "./routes/card.routes";
+const app: Application = express();
 
-const app = express();
+app.disable("x-powered-by");
 
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 100,
-  standardHeaders: "draft-8",
-  legacyHeaders: false,
+app.use("/api", generalLimiter);
+
+app.get("/api/health", (_req: Request, res: Response) => {
+  res.json(
+    customContent("success", { message: "Card validator API is running" }),
+  );
 });
 
-app.use(limiter);
+app.use("/api/v1/card", cardRoutes);
 
-app.get("/", (_req, res) => {
-  res.json({
-    message: "Card Validation API",
-  });
-});
-
-app.use("/api/v1/cards", cardRouter);
-
-app.use((_req, res) => {
-  res.status(404).json({
-    error: "Route not found",
-  });
-});
-
-app.use(
-  (
-    err: unknown,
-    _req: express.Request,
-    res: express.Response,
-    _next: express.NextFunction,
-  ) => {
-    if (err instanceof SyntaxError) {
-      res.status(400).json({
-        error: "Invalid JSON payload",
-      });
-      return;
-    }
-
-    console.error(err);
-
-    res.status(500).json({
-      error: "Internal server error",
-    });
-  },
-);
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 export default app;
