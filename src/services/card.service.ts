@@ -8,9 +8,12 @@ export interface ValidationResult {
 }
 
 export function validateCard(cardNumber: string): ValidationResult {
+  // Strip anything that is not a digit so the Luhn check and network
+  // detection only ever see a clean number.
   const digits = cardNumber.replace(/\D/g, "");
 
   const valid = luhnCheck(digits);
+  // Only meaningful to name a network for a number that actually passes.
   const network = valid ? detectNetwork(digits) : null;
 
   return {

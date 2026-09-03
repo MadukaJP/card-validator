@@ -3,7 +3,7 @@
 A card number validation REST API built with **Express.js** and **TypeScript** (`strict: true`).
 
 It exposes a single endpoint that reports whether a card number is well-formed using the
-**Luhn checksum**, and — for valid numbers — identifies the card **network** (Visa, Mastercard,
+**Luhn checksum**, and - for valid numbers - identifies the card **network** (Visa, Mastercard,
 American Express, Discover) from its IIN/BIN prefix.
 
 ---
@@ -20,6 +20,19 @@ American Express, Discover) from its IIN/BIN prefix.
 ```bash
 npm install
 ```
+
+### Environment variables
+
+Copy the example file and adjust as needed (all values have sensible defaults):
+
+```bash
+cp .env.example .env
+```
+
+| Variable               | Default             | Description                                                        |
+| ---------------------- | ------------------- | ------------------------------------------------------------------ |
+| `PORT`                 | `3000`              | Port the server listens on.                                        |
+| `CORS_ALLOWED_ORIGINS` | _(empty = allow all)_ | Comma-separated allowlist of origins. Empty allows all (dev).    |
 
 ### Run in development mode
 
@@ -42,6 +55,8 @@ npm start
 
 ```
 src/
+  config/
+    index.ts                 # dotenv-backed, typed configuration
   controllers/
     card.controller.ts       # HTTP concerns: input checks + response envelope
   routes/
@@ -50,7 +65,7 @@ src/
     rate-limit.middleware.ts # express-rate-limit instances
     error.middleware.ts      # 404 + global error handlers
   services/
-    luhn.ts                  # Luhn checksum — pure function
+    luhn.ts                  # Luhn checksum (pure function)
     card.network.ts          # IIN/BIN prefix -> network detection
     card.service.ts          # Orchestrates luhn + network detection
   utils/
@@ -89,14 +104,14 @@ Validates a card number.
 { "card_number": "4111111111111111" }
 ```
 
-`card_number` — required. A string or number. Spaces and dashes are accepted
+`card_number` - required. A string or number. Spaces and dashes are accepted
 (e.g. `"4111 1111 1111 1111"`).
 
 #### Responses
 
 All responses use a consistent envelope: `{ "status": "success" | "error", "message"?, "data"? }`.
 
-**200 OK** — the request was understood and validation ran (regardless of the result):
+**200 OK** - the request was understood and validation ran (regardless of the result):
 
 ```json
 {
@@ -114,29 +129,30 @@ All responses use a consistent envelope: `{ "status": "success" | "error", "mess
 }
 ```
 
-**400 Bad Request** — `card_number` is missing, empty, or the wrong type:
+**400 Bad Request** - `card_number` is missing, empty, or the wrong type:
 
 ```json
 { "status": "error", "message": "card_number is required." }
 ```
 
-**422 Unprocessable Entity** — `card_number` contains characters that cannot form a card number
+**422 Unprocessable Entity** - `card_number` contains characters that cannot form a card number
 (anything other than digits, spaces, and dashes):
 
 ```json
 { "status": "error", "message": "card_number contains invalid characters." }
 ```
 
-**404 Not Found** — unknown route. **429 Too Many Requests** — rate limit exceeded.
+**404 Not Found** - unknown route. **429 Too Many Requests** - rate limit exceeded.
 
 ---
 
 ## Security
 
-- **helmet** — sets safe HTTP response headers.
-- **express-rate-limit** — a coarse limiter across `/api` (100 req / 15 min) plus a stricter limiter
+- **helmet** - sets safe HTTP response headers.
+- **CORS** - origin allowlist from `CORS_ALLOWED_ORIGINS`; disallowed origins are rejected cleanly.
+- **express-rate-limit** - a coarse limiter across `/api` (100 req / 15 min) plus a stricter limiter
   on `/api/v1/card/validate` (20 req / min) to deter card/BIN enumeration.
-- **`x-powered-by` disabled** — does not advertise the framework.
+- **`x-powered-by` disabled** - does not advertise the framework.
 
 ---
 
@@ -148,38 +164,38 @@ npm test
 
 Runs two suites:
 
-- `luhn.test.ts` — unit tests for the Luhn algorithm.
-- `card.test.ts` — integration tests for the endpoint via supertest (status codes + envelope).
+- `luhn.test.ts` - unit tests for the Luhn algorithm.
+- `card.test.ts` - integration tests for the endpoint via supertest (status codes + envelope).
 
 ---
 
 ## Design decisions
 
-### Validation logic — the Luhn algorithm
+### Validation logic - the Luhn algorithm
 
 The Luhn algorithm is the industry-standard checksum used by every major card network to catch typos
-and fabricated numbers. It does not confirm a card actually exists or is active — that requires a
-network lookup — but it is the correct first gate for format validation.
+and fabricated numbers. It does not confirm a card actually exists or is active - that requires a
+network lookup - but it is the correct first gate for format validation.
 
-### Framework — Express over NestJS
+### Framework - Express over NestJS
 
 The task is a single endpoint. NestJS brings a lot of structure (modules, decorators, DI) that pays
 off across many endpoints and teams. For a focused scope, Express keeps the code direct and easy to
 trace top to bottom.
 
-### Layering — controller / service / utils
+### Layering - controller / service / utils
 
 Card logic lives in a **services/** layer (`luhn`, `card.network`, `card.service`) that has no
 knowledge of HTTP, so it can be unit-tested in isolation. The **controller** owns request/response
 concerns only. This separation is why the Luhn suite tests the algorithm directly while the route
 suite tests the HTTP contract.
 
-### Response shape — a consistent envelope
+### Response shape - a consistent envelope
 
 Every response is `{ status, message?, data? }`, so clients branch on a single `status` field. A card
 that fails the Luhn check is **not** an HTTP error: it is a successful evaluation that produced a
 negative result, so it returns **200** with `status: "success"` and `data.valid: false`. HTTP 4xx is
-reserved for problems with the *request* itself (missing input, wrong type, illegal characters) — the
+reserved for problems with the *request* itself (missing input, wrong type, illegal characters) - the
 split between **400** (missing/malformed) and **422** (present but unparseable) makes that distinction
 explicit.
 

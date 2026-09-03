@@ -1,6 +1,9 @@
+// The Luhn checksum, the standard way to verify a card number is well formed.
+// It only validates the format, not whether the card actually exists.
 export function luhnCheck(cardNumber: string): boolean {
   const digits = cardNumber.replace(/\D/g, "");
 
+  // Real card numbers always fall in this range.
   if (digits.length < 13 || digits.length > 19) {
     return false;
   }
