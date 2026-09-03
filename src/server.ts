@@ -15,6 +15,19 @@ app.get("/", (_req, res) => {
   });
 });
 
+app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  if (err instanceof SyntaxError) {
+    res.status(400).json({
+      error: "Invalid JSON payload",
+    });
+    return;
+  }
+
+  res.status(500).json({
+    error: "Internal server error",
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
