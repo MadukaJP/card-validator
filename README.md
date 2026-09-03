@@ -2,6 +2,8 @@
 
 A card number validation REST API built with **Express.js** and **TypeScript** (`strict: true`).
 
+**Live:** https://card-validator-backend.vercel.app/api/v1/card/validate
+
 It exposes a single endpoint that reports whether a card number is well-formed using the
 **Luhn checksum**, and - for valid numbers - identifies the card **network** (Visa, Mastercard,
 American Express, Discover) from its IIN/BIN prefix.
