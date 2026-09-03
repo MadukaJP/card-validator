@@ -1,3 +1,5 @@
+import { isValidLuhn } from "../utils/luhn";
+
 export function validateCard(cardNumber: string): boolean {
-  return cardNumber.length > 0;
+   return isValidLuhn(cardNumber);
 }
