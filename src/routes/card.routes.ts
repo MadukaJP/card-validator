@@ -1,11 +1,8 @@
 import { Router } from "express";
+import { validateCardController } from "../controllers/card.controller";
 
 const router = Router();
 
-router.post("/validate", (_req, res) => {
-  res.json({
-    valid: false,
-  });
-});
+router.post("/validate", validateCardController);
 
 export default router;
